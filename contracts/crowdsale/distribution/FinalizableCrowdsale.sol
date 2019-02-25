@@ -1,4 +1,4 @@
-pragma solidity ^0.4.24;
+pragma solidity ^0.5.2;
 
 import "../../math/SafeMath.sol";
 import "../validation/TimedCrowdsale.sol";
@@ -9,39 +9,43 @@ import "../validation/TimedCrowdsale.sol";
  * can do extra work after finishing.
  */
 contract FinalizableCrowdsale is TimedCrowdsale {
-  using SafeMath for uint256;
+    using SafeMath for uint256;
 
-  bool private _finalized = false;
+    bool private _finalized;
 
-  event CrowdsaleFinalized();
+    event CrowdsaleFinalized();
 
-  /**
-   * @return true if the crowdsale is finalized, false otherwise.
-   */
-  function finalized() public view returns (bool) {
-    return _finalized;
-  }
+    constructor () internal {
+        _finalized = false;
+    }
 
-  /**
-   * @dev Must be called after crowdsale ends, to do some extra finalization
-   * work. Calls the contract's finalization function.
-   */
-  function finalize() public {
-    require(!_finalized);
-    require(hasClosed());
+    /**
+     * @return true if the crowdsale is finalized, false otherwise.
+     */
+    function finalized() public view returns (bool) {
+        return _finalized;
+    }
 
-    _finalization();
-    emit CrowdsaleFinalized();
+    /**
+     * @dev Must be called after crowdsale ends, to do some extra finalization
+     * work. Calls the contract's finalization function.
+     */
+    function finalize() public {
+        require(!_finalized);
+        require(hasClosed());
 
-    _finalized = true;
-  }
+        _finalized = true;
 
-  /**
-   * @dev Can be overridden to add finalization logic. The overriding function
-   * should call super._finalization() to ensure the chain of finalization is
-   * executed entirely.
-   */
-  function _finalization() internal {
-  }
+        _finalization();
+        emit CrowdsaleFinalized();
+    }
 
+    /**
+     * @dev Can be overridden to add finalization logic. The overriding function
+     * should call super._finalization() to ensure the chain of finalization is
+     * executed entirely.
+     */
+    function _finalization() internal {
+        // solhint-disable-previous-line no-empty-blocks
+    }
 }
