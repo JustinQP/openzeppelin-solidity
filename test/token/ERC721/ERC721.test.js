@@ -1,10 +1,12 @@
-const { BN, constants, expectEvent, shouldFail } = require('openzeppelin-test-helpers');
+const { BN, constants, expectEvent, expectRevert } = require('openzeppelin-test-helpers');
 const { ZERO_ADDRESS } = constants;
+
+const { expect } = require('chai');
 
 const { shouldBehaveLikeERC721 } = require('./ERC721.behavior');
 const ERC721Mock = artifacts.require('ERC721Mock.sol');
 
-contract('ERC721', function ([_, creator, tokenOwner, anyone, ...accounts]) {
+contract('ERC721', function ([_, creator, tokenOwner, other, ...accounts]) {
   beforeEach(async function () {
     this.token = await ERC721Mock.new({ from: creator });
   });
@@ -16,7 +18,9 @@ contract('ERC721', function ([_, creator, tokenOwner, anyone, ...accounts]) {
 
     describe('_mint(address, uint256)', function () {
       it('reverts with a null destination address', async function () {
-        await shouldFail.reverting(this.token.mint(ZERO_ADDRESS, tokenId));
+        await expectRevert(
+          this.token.mint(ZERO_ADDRESS, tokenId), 'ERC721: mint to the zero address'
+        );
       });
 
       context('with minted token', async function () {
@@ -29,19 +33,21 @@ contract('ERC721', function ([_, creator, tokenOwner, anyone, ...accounts]) {
         });
 
         it('creates the token', async function () {
-          (await this.token.balanceOf(tokenOwner)).should.be.bignumber.equal('1');
-          (await this.token.ownerOf(tokenId)).should.equal(tokenOwner);
+          expect(await this.token.balanceOf(tokenOwner)).to.be.bignumber.equal('1');
+          expect(await this.token.ownerOf(tokenId)).to.equal(tokenOwner);
         });
 
         it('reverts when adding a token id that already exists', async function () {
-          await shouldFail.reverting(this.token.mint(tokenOwner, tokenId));
+          await expectRevert(this.token.mint(tokenOwner, tokenId), 'ERC721: token already minted');
         });
       });
     });
 
     describe('_burn(address, uint256)', function () {
       it('reverts when burning a non-existent token id', async function () {
-        await shouldFail.reverting(this.token.methods['burn(address,uint256)'](tokenOwner, tokenId));
+        await expectRevert(
+          this.token.methods['burn(address,uint256)'](tokenOwner, tokenId), 'ERC721: owner query for nonexistent token'
+        );
       });
 
       context('with minted token', function () {
@@ -50,7 +56,9 @@ contract('ERC721', function ([_, creator, tokenOwner, anyone, ...accounts]) {
         });
 
         it('reverts when the account is not the owner', async function () {
-          await shouldFail.reverting(this.token.methods['burn(address,uint256)'](anyone, tokenId));
+          await expectRevert(
+            this.token.methods['burn(address,uint256)'](other, tokenId), 'ERC721: burn of token that is not own'
+          );
         });
 
         context('with burnt token', function () {
@@ -63,12 +71,17 @@ contract('ERC721', function ([_, creator, tokenOwner, anyone, ...accounts]) {
           });
 
           it('deletes the token', async function () {
-            (await this.token.balanceOf(tokenOwner)).should.be.bignumber.equal('0');
-            await shouldFail.reverting(this.token.ownerOf(tokenId));
+            expect(await this.token.balanceOf(tokenOwner)).to.be.bignumber.equal('0');
+            await expectRevert(
+              this.token.ownerOf(tokenId), 'ERC721: owner query for nonexistent token'
+            );
           });
 
           it('reverts when burning a token id that has been deleted', async function () {
-            await shouldFail.reverting(this.token.methods['burn(address,uint256)'](tokenOwner, tokenId));
+            await expectRevert(
+              this.token.methods['burn(address,uint256)'](tokenOwner, tokenId),
+              'ERC721: owner query for nonexistent token'
+            );
           });
         });
       });
@@ -76,7 +89,9 @@ contract('ERC721', function ([_, creator, tokenOwner, anyone, ...accounts]) {
 
     describe('_burn(uint256)', function () {
       it('reverts when burning a non-existent token id', async function () {
-        await shouldFail.reverting(this.token.methods['burn(uint256)'](tokenId));
+        await expectRevert(
+          this.token.methods['burn(uint256)'](tokenId), 'ERC721: owner query for nonexistent token'
+        );
       });
 
       context('with minted token', function () {
@@ -94,12 +109,16 @@ contract('ERC721', function ([_, creator, tokenOwner, anyone, ...accounts]) {
           });
 
           it('deletes the token', async function () {
-            (await this.token.balanceOf(tokenOwner)).should.be.bignumber.equal('0');
-            await shouldFail.reverting(this.token.ownerOf(tokenId));
+            expect(await this.token.balanceOf(tokenOwner)).to.be.bignumber.equal('0');
+            await expectRevert(
+              this.token.ownerOf(tokenId), 'ERC721: owner query for nonexistent token'
+            );
           });
 
           it('reverts when burning a token id that has been deleted', async function () {
-            await shouldFail.reverting(this.token.methods['burn(uint256)'](tokenId));
+            await expectRevert(
+              this.token.methods['burn(uint256)'](tokenId), 'ERC721: owner query for nonexistent token'
+            );
           });
         });
       });

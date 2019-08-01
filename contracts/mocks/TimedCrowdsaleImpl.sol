@@ -1,4 +1,4 @@
-pragma solidity ^0.5.2;
+pragma solidity ^0.5.0;
 
 import "../token/ERC20/IERC20.sol";
 import "../crowdsale/validation/TimedCrowdsale.sol";
@@ -10,5 +10,9 @@ contract TimedCrowdsaleImpl is TimedCrowdsale {
         TimedCrowdsale(openingTime, closingTime)
     {
         // solhint-disable-previous-line no-empty-blocks
+    }
+
+    function extendTime(uint256 closingTime) public {
+        _extendTime(closingTime);
     }
 }

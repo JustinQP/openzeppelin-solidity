@@ -1,4 +1,4 @@
-pragma solidity ^0.5.2;
+pragma solidity ^0.5.0;
 
 import "../math/SafeMath.sol";
 import "../utils/Arrays.sol";
@@ -7,10 +7,17 @@ import "../token/ERC20/ERC20.sol";
 
 /**
  * @title ERC20 token with snapshots.
- * @dev Inspired by Jordi Baylina's MiniMeToken to record historical balances:
- * https://github.com/Giveth/minime/blob/ea04d950eea153a04c51fa510b068b9dded390cb/contracts/MiniMeToken.sol
- * Snapshots store a value at the time a snapshot is taken (and a new snapshot id created), and the corresponding
- * snapshot id. Each account has individual snapshots taken on demand, as does the token's total supply.
+ * @dev Inspired by Jordi Baylina's
+ * https://github.com/Giveth/minimd/blob/ea04d950eea153a04c51fa510b068b9dded390cb/contracts/MiniMeToken.sol[MiniMeToken]
+ * to record historical balances.
+ *
+ * When a snapshot is made, the balances and total supply at the time of the snapshot are recorded for later
+ * access.
+ *
+ * To make a snapshot, call the {snapshot} function, which will emit the {Snapshot} event and return a snapshot id.
+ * To get the total supply from a snapshot, call the function {totalSupplyAt} with the snapshot id.
+ * To get the balance of an account from a snapshot, call the {balanceOfAt} function with the snapshot id and the
+ * account address.
  * @author Validity Labs AG <info@validitylabs.org>
  */
 contract ERC20Snapshot is ERC20 {
@@ -26,7 +33,7 @@ contract ERC20Snapshot is ERC20 {
     }
 
     mapping (address => Snapshots) private _accountBalanceSnapshots;
-    Snapshots private _totalSupplySnaphots;
+    Snapshots private _totalSupplySnapshots;
 
     // Snapshot ids increase monotonically, with the first value being 1. An id of 0 is invalid.
     Counters.Counter private _currentSnapshotId;
@@ -51,7 +58,7 @@ contract ERC20Snapshot is ERC20 {
     }
 
     function totalSupplyAt(uint256 snapshotId) public view returns(uint256) {
-        (bool snapshotted, uint256 value) = _valueAt(snapshotId, _totalSupplySnaphots);
+        (bool snapshotted, uint256 value) = _valueAt(snapshotId, _totalSupplySnapshots);
 
         return snapshotted ? value : totalSupply();
     }
@@ -96,8 +103,9 @@ contract ERC20Snapshot is ERC20 {
     function _valueAt(uint256 snapshotId, Snapshots storage snapshots)
         private view returns (bool, uint256)
     {
-        require(snapshotId > 0);
-        require(snapshotId <= _currentSnapshotId.current());
+        require(snapshotId > 0, "ERC20Snapshot: id is 0");
+        // solhint-disable-next-line max-line-length
+        require(snapshotId <= _currentSnapshotId.current(), "ERC20Snapshot: nonexistent id");
 
         uint256 index = snapshots.ids.findUpperBound(snapshotId);
 
@@ -113,7 +121,7 @@ contract ERC20Snapshot is ERC20 {
     }
 
     function _updateTotalSupplySnapshot() private {
-        _updateSnapshot(_totalSupplySnaphots, totalSupply());
+        _updateSnapshot(_totalSupplySnapshots, totalSupply());
     }
 
     function _updateSnapshot(Snapshots storage snapshots, uint256 currentValue) private {

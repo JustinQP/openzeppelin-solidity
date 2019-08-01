@@ -1,5 +1,7 @@
 const { balance, expectEvent } = require('openzeppelin-test-helpers');
 
+const { expect } = require('chai');
+
 function shouldBehaveLikeMintedCrowdsale ([_, investor, wallet, purchaser], rate, value) {
   const expectedTokenAmount = rate.mul(value);
 
@@ -24,13 +26,13 @@ function shouldBehaveLikeMintedCrowdsale ([_, investor, wallet, purchaser], rate
 
       it('should assign tokens to sender', async function () {
         await this.crowdsale.sendTransaction({ value: value, from: investor });
-        (await this.token.balanceOf(investor)).should.be.bignumber.equal(expectedTokenAmount);
+        expect(await this.token.balanceOf(investor)).to.be.bignumber.equal(expectedTokenAmount);
       });
 
       it('should forward funds to wallet', async function () {
-        (await balance.difference(wallet, () =>
-          this.crowdsale.sendTransaction({ value, from: investor }))
-        ).should.be.bignumber.equal(value);
+        const balanceTracker = await balance.tracker(wallet);
+        await this.crowdsale.sendTransaction({ value, from: investor });
+        expect(await balanceTracker.delta()).to.be.bignumber.equal(value);
       });
     });
   });

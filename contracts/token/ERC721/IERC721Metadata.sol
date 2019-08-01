@@ -1,10 +1,10 @@
-pragma solidity ^0.5.2;
+pragma solidity ^0.5.0;
 
 import "./IERC721.sol";
 
 /**
  * @title ERC-721 Non-Fungible Token Standard, optional metadata extension
- * @dev See https://github.com/ethereum/EIPs/blob/master/EIPS/eip-721.md
+ * @dev See https://eips.ethereum.org/EIPS/eip-721
  */
 contract IERC721Metadata is IERC721 {
     function name() external view returns (string memory);

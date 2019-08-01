@@ -1,4 +1,6 @@
-const { BN, balance, ether, should, shouldFail, time } = require('openzeppelin-test-helpers');
+const { BN, balance, ether, expectRevert, time } = require('openzeppelin-test-helpers');
+
+const { expect } = require('chai');
 
 const SampleCrowdsale = artifacts.require('SampleCrowdsale');
 const SampleCrowdsaleToken = artifacts.require('SampleCrowdsaleToken');
@@ -29,20 +31,19 @@ contract('SampleCrowdsale', function ([_, deployer, owner, wallet, investor]) {
   });
 
   it('should create crowdsale with correct parameters', async function () {
-    should.exist(this.crowdsale);
-    should.exist(this.token);
-
-    (await this.crowdsale.openingTime()).should.be.bignumber.equal(this.openingTime);
-    (await this.crowdsale.closingTime()).should.be.bignumber.equal(this.closingTime);
-    (await this.crowdsale.rate()).should.be.bignumber.equal(RATE);
-    (await this.crowdsale.wallet()).should.be.equal(wallet);
-    (await this.crowdsale.goal()).should.be.bignumber.equal(GOAL);
-    (await this.crowdsale.cap()).should.be.bignumber.equal(CAP);
+    expect(await this.crowdsale.openingTime()).to.be.bignumber.equal(this.openingTime);
+    expect(await this.crowdsale.closingTime()).to.be.bignumber.equal(this.closingTime);
+    expect(await this.crowdsale.rate()).to.be.bignumber.equal(RATE);
+    expect(await this.crowdsale.wallet()).to.equal(wallet);
+    expect(await this.crowdsale.goal()).to.be.bignumber.equal(GOAL);
+    expect(await this.crowdsale.cap()).to.be.bignumber.equal(CAP);
   });
 
   it('should not accept payments before start', async function () {
-    await shouldFail.reverting(this.crowdsale.send(ether('1')));
-    await shouldFail.reverting(this.crowdsale.buyTokens(investor, { from: investor, value: ether('1') }));
+    await expectRevert(this.crowdsale.send(ether('1')), 'TimedCrowdsale: not open');
+    await expectRevert(this.crowdsale.buyTokens(investor, { from: investor, value: ether('1') }),
+      'TimedCrowdsale: not open'
+    );
   });
 
   it('should accept payments during the sale', async function () {
@@ -52,41 +53,45 @@ contract('SampleCrowdsale', function ([_, deployer, owner, wallet, investor]) {
     await time.increaseTo(this.openingTime);
     await this.crowdsale.buyTokens(investor, { value: investmentAmount, from: investor });
 
-    (await this.token.balanceOf(investor)).should.be.bignumber.equal(expectedTokenAmount);
-    (await this.token.totalSupply()).should.be.bignumber.equal(expectedTokenAmount);
+    expect(await this.token.balanceOf(investor)).to.be.bignumber.equal(expectedTokenAmount);
+    expect(await this.token.totalSupply()).to.be.bignumber.equal(expectedTokenAmount);
   });
 
   it('should reject payments after end', async function () {
     await time.increaseTo(this.afterClosingTime);
-    await shouldFail.reverting(this.crowdsale.send(ether('1')));
-    await shouldFail.reverting(this.crowdsale.buyTokens(investor, { value: ether('1'), from: investor }));
+    await expectRevert(this.crowdsale.send(ether('1')), 'TimedCrowdsale: not open');
+    await expectRevert(this.crowdsale.buyTokens(investor, { value: ether('1'), from: investor }),
+      'TimedCrowdsale: not open'
+    );
   });
 
   it('should reject payments over cap', async function () {
     await time.increaseTo(this.openingTime);
     await this.crowdsale.send(CAP);
-    await shouldFail.reverting(this.crowdsale.send(1));
+    await expectRevert(this.crowdsale.send(1), 'CappedCrowdsale: cap exceeded');
   });
 
   it('should allow finalization and transfer funds to wallet if the goal is reached', async function () {
     await time.increaseTo(this.openingTime);
     await this.crowdsale.send(GOAL);
 
-    (await balance.difference(wallet, async () => {
-      await time.increaseTo(this.afterClosingTime);
-      await this.crowdsale.finalize({ from: owner });
-    })).should.be.bignumber.equal(GOAL);
+    const balanceTracker = await balance.tracker(wallet);
+    await time.increaseTo(this.afterClosingTime);
+    await this.crowdsale.finalize({ from: owner });
+    expect(await balanceTracker.delta()).to.be.bignumber.equal(GOAL);
   });
 
   it('should allow refunds if the goal is not reached', async function () {
-    (await balance.difference(investor, async () => {
-      await time.increaseTo(this.openingTime);
-      await this.crowdsale.sendTransaction({ value: ether('1'), from: investor, gasPrice: 0 });
-      await time.increaseTo(this.afterClosingTime);
+    const balanceTracker = await balance.tracker(investor);
 
-      await this.crowdsale.finalize({ from: owner });
-      await this.crowdsale.claimRefund(investor, { gasPrice: 0 });
-    })).should.be.bignumber.equal('0');
+    await time.increaseTo(this.openingTime);
+    await this.crowdsale.sendTransaction({ value: ether('1'), from: investor, gasPrice: 0 });
+    await time.increaseTo(this.afterClosingTime);
+
+    await this.crowdsale.finalize({ from: owner });
+    await this.crowdsale.claimRefund(investor, { gasPrice: 0 });
+
+    expect(await balanceTracker.delta()).to.be.bignumber.equal('0');
   });
 
   describe('when goal > cap', function () {
@@ -94,9 +99,9 @@ contract('SampleCrowdsale', function ([_, deployer, owner, wallet, investor]) {
     const HIGH_GOAL = ether('30');
 
     it('creation reverts', async function () {
-      await shouldFail.reverting(SampleCrowdsale.new(
+      await expectRevert(SampleCrowdsale.new(
         this.openingTime, this.closingTime, RATE, wallet, CAP, this.token.address, HIGH_GOAL
-      ));
+      ), 'SampleCrowdSale: goal is greater than cap');
     });
   });
 });

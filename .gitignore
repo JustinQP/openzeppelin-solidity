@@ -37,3 +37,14 @@ build/
 
 # truffle
 .node-xmlhttprequest-*
+
+# IntelliJ IDE
+.idea
+
+# docs artifacts
+docs/modules/api
+openzeppelin-docs
+
+# only used to package @openzeppelin/contracts
+contracts/build/
+contracts/README.md

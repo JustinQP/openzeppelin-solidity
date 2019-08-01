@@ -1,4 +1,6 @@
-const { BN, expectEvent, shouldFail } = require('openzeppelin-test-helpers');
+const { BN, expectEvent, expectRevert } = require('openzeppelin-test-helpers');
+
+const { expect } = require('chai');
 
 const ERC20PausableMock = artifacts.require('ERC20PausableMock');
 const { shouldBehaveLikePublicRole } = require('../../behaviors/access/roles/PublicRole.behavior');
@@ -26,7 +28,7 @@ contract('ERC20Pausable', function ([_, pauser, otherPauser, recipient, anotherA
       describe('when the token is unpaused', function () {
         it('pauses the token', async function () {
           await this.token.pause({ from });
-          (await this.token.paused()).should.equal(true);
+          expect(await this.token.paused()).to.equal(true);
         });
 
         it('emits a Pause event', async function () {
@@ -42,7 +44,7 @@ contract('ERC20Pausable', function ([_, pauser, otherPauser, recipient, anotherA
         });
 
         it('reverts', async function () {
-          await shouldFail.reverting(this.token.pause({ from }));
+          await expectRevert(this.token.pause({ from }), 'Pausable: paused');
         });
       });
     });
@@ -51,7 +53,9 @@ contract('ERC20Pausable', function ([_, pauser, otherPauser, recipient, anotherA
       const from = anotherAccount;
 
       it('reverts', async function () {
-        await shouldFail.reverting(this.token.pause({ from }));
+        await expectRevert(this.token.pause({ from }),
+          'PauserRole: caller does not have the Pauser role'
+        );
       });
     });
   });
@@ -67,7 +71,7 @@ contract('ERC20Pausable', function ([_, pauser, otherPauser, recipient, anotherA
 
         it('unpauses the token', async function () {
           await this.token.unpause({ from });
-          (await this.token.paused()).should.equal(false);
+          expect(await this.token.paused()).to.equal(false);
         });
 
         it('emits an Unpause event', async function () {
@@ -79,7 +83,7 @@ contract('ERC20Pausable', function ([_, pauser, otherPauser, recipient, anotherA
 
       describe('when the token is unpaused', function () {
         it('reverts', async function () {
-          await shouldFail.reverting(this.token.unpause({ from }));
+          await expectRevert(this.token.unpause({ from }), 'Pausable: not paused');
         });
       });
     });
@@ -88,7 +92,9 @@ contract('ERC20Pausable', function ([_, pauser, otherPauser, recipient, anotherA
       const from = anotherAccount;
 
       it('reverts', async function () {
-        await shouldFail.reverting(this.token.unpause({ from }));
+        await expectRevert(this.token.unpause({ from }),
+          'PauserRole: caller does not have the Pauser role'
+        );
       });
     });
   });
@@ -98,18 +104,18 @@ contract('ERC20Pausable', function ([_, pauser, otherPauser, recipient, anotherA
 
     describe('paused', function () {
       it('is not paused by default', async function () {
-        (await this.token.paused({ from })).should.equal(false);
+        expect(await this.token.paused({ from })).to.equal(false);
       });
 
       it('is paused after being paused', async function () {
         await this.token.pause({ from });
-        (await this.token.paused({ from })).should.equal(true);
+        expect(await this.token.paused({ from })).to.equal(true);
       });
 
       it('is not paused after being paused and then unpaused', async function () {
         await this.token.pause({ from });
         await this.token.unpause({ from });
-        (await this.token.paused()).should.equal(false);
+        expect(await this.token.paused()).to.equal(false);
       });
     });
 
@@ -117,8 +123,8 @@ contract('ERC20Pausable', function ([_, pauser, otherPauser, recipient, anotherA
       it('allows to transfer when unpaused', async function () {
         await this.token.transfer(recipient, initialSupply, { from: pauser });
 
-        (await this.token.balanceOf(pauser)).should.be.bignumber.equal('0');
-        (await this.token.balanceOf(recipient)).should.be.bignumber.equal(initialSupply);
+        expect(await this.token.balanceOf(pauser)).to.be.bignumber.equal('0');
+        expect(await this.token.balanceOf(recipient)).to.be.bignumber.equal(initialSupply);
       });
 
       it('allows to transfer when paused and then unpaused', async function () {
@@ -127,14 +133,16 @@ contract('ERC20Pausable', function ([_, pauser, otherPauser, recipient, anotherA
 
         await this.token.transfer(recipient, initialSupply, { from: pauser });
 
-        (await this.token.balanceOf(pauser)).should.be.bignumber.equal('0');
-        (await this.token.balanceOf(recipient)).should.be.bignumber.equal(initialSupply);
+        expect(await this.token.balanceOf(pauser)).to.be.bignumber.equal('0');
+        expect(await this.token.balanceOf(recipient)).to.be.bignumber.equal(initialSupply);
       });
 
       it('reverts when trying to transfer when paused', async function () {
         await this.token.pause({ from: pauser });
 
-        await shouldFail.reverting(this.token.transfer(recipient, initialSupply, { from: pauser }));
+        await expectRevert(this.token.transfer(recipient, initialSupply, { from: pauser }),
+          'Pausable: paused'
+        );
       });
     });
 
@@ -144,7 +152,7 @@ contract('ERC20Pausable', function ([_, pauser, otherPauser, recipient, anotherA
       it('allows to approve when unpaused', async function () {
         await this.token.approve(anotherAccount, allowance, { from: pauser });
 
-        (await this.token.allowance(pauser, anotherAccount)).should.be.bignumber.equal(allowance);
+        expect(await this.token.allowance(pauser, anotherAccount)).to.be.bignumber.equal(allowance);
       });
 
       it('allows to approve when paused and then unpaused', async function () {
@@ -153,13 +161,15 @@ contract('ERC20Pausable', function ([_, pauser, otherPauser, recipient, anotherA
 
         await this.token.approve(anotherAccount, allowance, { from: pauser });
 
-        (await this.token.allowance(pauser, anotherAccount)).should.be.bignumber.equal(allowance);
+        expect(await this.token.allowance(pauser, anotherAccount)).to.be.bignumber.equal(allowance);
       });
 
       it('reverts when trying to approve when paused', async function () {
         await this.token.pause({ from: pauser });
 
-        await shouldFail.reverting(this.token.approve(anotherAccount, allowance, { from: pauser }));
+        await expectRevert(this.token.approve(anotherAccount, allowance, { from: pauser }),
+          'Pausable: paused'
+        );
       });
     });
 
@@ -173,8 +183,8 @@ contract('ERC20Pausable', function ([_, pauser, otherPauser, recipient, anotherA
       it('allows to transfer from when unpaused', async function () {
         await this.token.transferFrom(pauser, recipient, allowance, { from: anotherAccount });
 
-        (await this.token.balanceOf(recipient)).should.be.bignumber.equal(allowance);
-        (await this.token.balanceOf(pauser)).should.be.bignumber.equal(initialSupply.sub(allowance));
+        expect(await this.token.balanceOf(recipient)).to.be.bignumber.equal(allowance);
+        expect(await this.token.balanceOf(pauser)).to.be.bignumber.equal(initialSupply.sub(allowance));
       });
 
       it('allows to transfer when paused and then unpaused', async function () {
@@ -183,14 +193,16 @@ contract('ERC20Pausable', function ([_, pauser, otherPauser, recipient, anotherA
 
         await this.token.transferFrom(pauser, recipient, allowance, { from: anotherAccount });
 
-        (await this.token.balanceOf(recipient)).should.be.bignumber.equal(allowance);
-        (await this.token.balanceOf(pauser)).should.be.bignumber.equal(initialSupply.sub(allowance));
+        expect(await this.token.balanceOf(recipient)).to.be.bignumber.equal(allowance);
+        expect(await this.token.balanceOf(pauser)).to.be.bignumber.equal(initialSupply.sub(allowance));
       });
 
       it('reverts when trying to transfer from when paused', async function () {
         await this.token.pause({ from: pauser });
 
-        await shouldFail.reverting(this.token.transferFrom(pauser, recipient, allowance, { from: anotherAccount }));
+        await expectRevert(this.token.transferFrom(
+          pauser, recipient, allowance, { from: anotherAccount }), 'Pausable: paused'
+        );
       });
     });
 
@@ -205,7 +217,7 @@ contract('ERC20Pausable', function ([_, pauser, otherPauser, recipient, anotherA
       it('allows to decrease approval when unpaused', async function () {
         await this.token.decreaseAllowance(anotherAccount, decrement, { from: pauser });
 
-        (await this.token.allowance(pauser, anotherAccount)).should.be.bignumber.equal(allowance.sub(decrement));
+        expect(await this.token.allowance(pauser, anotherAccount)).to.be.bignumber.equal(allowance.sub(decrement));
       });
 
       it('allows to decrease approval when paused and then unpaused', async function () {
@@ -214,13 +226,15 @@ contract('ERC20Pausable', function ([_, pauser, otherPauser, recipient, anotherA
 
         await this.token.decreaseAllowance(anotherAccount, decrement, { from: pauser });
 
-        (await this.token.allowance(pauser, anotherAccount)).should.be.bignumber.equal(allowance.sub(decrement));
+        expect(await this.token.allowance(pauser, anotherAccount)).to.be.bignumber.equal(allowance.sub(decrement));
       });
 
       it('reverts when trying to transfer when paused', async function () {
         await this.token.pause({ from: pauser });
 
-        await shouldFail.reverting(this.token.decreaseAllowance(anotherAccount, decrement, { from: pauser }));
+        await expectRevert(this.token.decreaseAllowance(
+          anotherAccount, decrement, { from: pauser }), 'Pausable: paused'
+        );
       });
     });
 
@@ -235,7 +249,7 @@ contract('ERC20Pausable', function ([_, pauser, otherPauser, recipient, anotherA
       it('allows to increase approval when unpaused', async function () {
         await this.token.increaseAllowance(anotherAccount, increment, { from: pauser });
 
-        (await this.token.allowance(pauser, anotherAccount)).should.be.bignumber.equal(allowance.add(increment));
+        expect(await this.token.allowance(pauser, anotherAccount)).to.be.bignumber.equal(allowance.add(increment));
       });
 
       it('allows to increase approval when paused and then unpaused', async function () {
@@ -244,13 +258,15 @@ contract('ERC20Pausable', function ([_, pauser, otherPauser, recipient, anotherA
 
         await this.token.increaseAllowance(anotherAccount, increment, { from: pauser });
 
-        (await this.token.allowance(pauser, anotherAccount)).should.be.bignumber.equal(allowance.add(increment));
+        expect(await this.token.allowance(pauser, anotherAccount)).to.be.bignumber.equal(allowance.add(increment));
       });
 
       it('reverts when trying to increase approval when paused', async function () {
         await this.token.pause({ from: pauser });
 
-        await shouldFail.reverting(this.token.increaseAllowance(anotherAccount, increment, { from: pauser }));
+        await expectRevert(this.token.increaseAllowance(
+          anotherAccount, increment, { from: pauser }), 'Pausable: paused'
+        );
       });
     });
   });
