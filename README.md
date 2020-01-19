@@ -1,8 +1,8 @@
 # <img src="logo.png" alt="OpenZeppelin" height="40px">
 
 [![NPM Package](https://img.shields.io/npm/v/@openzeppelin/contracts.svg)](https://www.npmjs.org/package/@openzeppelin/contracts)
-[![Build Status](https://travis-ci.com/OpenZeppelin/openzeppelin-contracts.svg?branch=master)](https://travis-ci.com/OpenZeppelin/openzeppelin-contracts)
-[![Coverage Status](https://coveralls.io/repos/github/OpenZeppelin/openzeppelin-contracts/badge.svg?branch=master)](https://coveralls.io/github/OpenZeppelin/openzeppelin-contracts?branch=master)
+[![Build Status](https://circleci.com/gh/OpenZeppelin/openzeppelin-contracts.svg?style=shield)](https://circleci.com/gh/OpenZeppelin/openzeppelin-contracts)
+[![Coverage Status](https://codecov.io/gh/OpenZeppelin/openzeppelin-contracts/graph/badge.svg)](https://codecov.io/gh/OpenZeppelin/openzeppelin-contracts)
 
 **OpenZeppelin Contracts is a library for secure smart contract development.** It provides implementations of standards like ERC20 and ERC721 which you can deploy as-is or extend to suit your needs, as well as Solidity components to build custom contracts and more complex decentralized systems.
 
@@ -30,7 +30,7 @@ contract MyNFT is ERC721Full, ERC721Mintable {
 }
 ```
 
-> You need an ethereum development framework for the above import statements to work! Check out these guides for [Truffle], [Embark] or [Buidler].
+> You need an ethereum development framework for the above import statements to work! Check out these guides for [OpenZeppelin CLI], [Truffle], [Embark] or [Buidler].
 
 On our site you will find a few [guides] to learn about the different parts of OpenZeppelin, as well as [documentation for the API][API docs]. Keep in mind that the API docs are work in progress, and don’t hesitate to ask questions in [our forum][forum].
 
@@ -55,10 +55,11 @@ OpenZeppelin is released under the [MIT License](LICENSE).
 
 [API docs]: https://docs.openzeppelin.com/contracts/api/token/erc20
 [guides]: https://docs.openzeppelin.com/contracts
-[API Stability]: https://docs.openzeppelin.com/contracts/api-stability
+[API Stability]: https://docs.openzeppelin.com/contracts/releases-stability
 [forum]: https://forum.openzeppelin.com
 [OpenZeppelin]: https://openzeppelin.com
 [contribution guide]: CONTRIBUTING.md
+[OpenZeppelin CLI]: https://docs.openzeppelin.com/cli
 [Truffle]: https://truffleframework.com/docs/truffle/quickstart
 [Embark]: https://embark.status.im/docs/quick_start.html
-[Buidler]: https://buidler.dev/guides/#getting-started
+[Buidler]: https://buidler.dev/getting-started/#overview

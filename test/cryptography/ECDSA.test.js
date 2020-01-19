@@ -1,17 +1,33 @@
-const { constants, expectRevert } = require('openzeppelin-test-helpers');
+const { accounts, contract, web3 } = require('@openzeppelin/test-environment');
+
+const { constants, expectRevert } = require('@openzeppelin/test-helpers');
 const { ZERO_ADDRESS } = constants;
 const { toEthSignedMessageHash, fixSignature } = require('../helpers/sign');
 
 const { expect } = require('chai');
 
-const ECDSAMock = artifacts.require('ECDSAMock');
+const ECDSAMock = contract.fromArtifact('ECDSAMock');
 
 const TEST_MESSAGE = web3.utils.sha3('OpenZeppelin');
 const WRONG_MESSAGE = web3.utils.sha3('Nope');
 
-contract('ECDSA', function ([_, other]) {
+describe('ECDSA', function () {
+  const [ other ] = accounts;
+
   beforeEach(async function () {
     this.ecdsa = await ECDSAMock.new();
+  });
+
+  context('recover with invalid signature', function () {
+    it('with short signature', async function () {
+      expect(await this.ecdsa.recover(TEST_MESSAGE, '0x1234')).to.equal(ZERO_ADDRESS);
+    });
+
+    it('with long signature', async function () {
+      // eslint-disable-next-line max-len
+      expect(await this.ecdsa.recover(TEST_MESSAGE, '0x01234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789'))
+        .to.equal(ZERO_ADDRESS);
+    });
   });
 
   context('recover with valid signature', function () {
@@ -130,7 +146,7 @@ contract('ECDSA', function ([_, other]) {
 
   context('toEthSignedMessage', function () {
     it('should prefix hashes correctly', async function () {
-      (await this.ecdsa.toEthSignedMessageHash(TEST_MESSAGE)).should.equal(toEthSignedMessageHash(TEST_MESSAGE));
+      expect(await this.ecdsa.toEthSignedMessageHash(TEST_MESSAGE)).to.equal(toEthSignedMessageHash(TEST_MESSAGE));
       expect(await this.ecdsa.toEthSignedMessageHash(TEST_MESSAGE)).to.equal(toEthSignedMessageHash(TEST_MESSAGE));
     });
   });
